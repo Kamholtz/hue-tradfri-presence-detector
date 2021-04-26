@@ -11,7 +11,7 @@ const USERNAME = process.env.HUE_BRIDGE_USER
 
 // TRADFRI
 const Tradfri = require('ikea-tradfri');
-var Identity = { identity: process.env.TRADFRI_IDENTITY, psk: process.env.TRADFRI_PSK};
+var Identity = { identity: process.env.TRADFRI_IDENTITY, psk: process.env.TRADFRI_PSK };
 
 tradfri = new Tradfri(process.env.TRADFRI_IP, Identity);
 
@@ -26,36 +26,45 @@ Promise.all([tradfri.connect(), v3.discovery.nupnpSearch()])
 	})
 	.then(api => {
 		const PRECENCE_SENSOR_ID = 33;
-		const DESK_1 = tradfri.devices[1];
-		const DESK_2 = tradfri.devices[2];
-		const TIMEOUT_MAX = 15;
+		const TIMEOUT_MAX = 5;
+		const KITCHEN_LIGHTS = tradfri.devices.filter(x => x.name.match(/K\d/));
+
 		var timeout = 0;
 		var seconds = 0;
 
+		function AnyKitchenLightsOn(kitchenLights) {
+			return kitchenLights.reduce(
+				function (acc, cur) {
+					return acc || cur.isOn;
+				}, false);
+		}
+
 		setInterval(async () => {
 			const presenceSensor = await api.sensors.getSensor(PRECENCE_SENSOR_ID);
-			console.log(presenceSensor.name + " presence = " + presenceSensor.presence);
+			var initialLightsOn = AnyKitchenLightsOn(KITCHEN_LIGHTS);
 
+			console.log("ON? : " + initialLightsOn);
 			if (presenceSensor.presence) {
 				timeout = 0;
-			} else if (!presenceSensor.presence && DESK_1.isOn) {
+			} else if (!presenceSensor.presence && initialLightsOn) {
 				timeout++;
 			}
 
-			console.log("ON? : " + DESK_1.isOn);
-
-			if (!presenceSensor.presence && timeout > TIMEOUT_MAX && DESK_1.isOn) {
+			if (!presenceSensor.presence && timeout > TIMEOUT_MAX && initialLightsOn) {
 				// Turn off
-				let success1 = await DESK_1.switch(false);
-				let success2 = await DESK_2.switch(false);
+				let success = await Promise.all(KITCHEN_LIGHTS.map(x => x.switch(false)));
+				if (success) console.log("Lights are off");
+
 				timeout = 0;
-			} else if (presenceSensor.presence && !DESK_1.isOn) {
+			} else if (presenceSensor.presence && !initialLightsOn) {
 				// Turn on
-				let success1 = await DESK_1.switch(true);
-				let success2 = await DESK_2.switch(true);
+				let success = await Promise.all(KITCHEN_LIGHTS.map(x => x.switch(true)));
+				if (success) console.log("Lights are on");
 			}
 
+			var endLightsOn = AnyKitchenLightsOn(KITCHEN_LIGHTS);
+
 			seconds++;
-			console.log(`Total seconds = ${seconds} , Timeout = ${timeout}/${TIMEOUT_MAX}`);
+			console.log(`Total seconds = ${seconds}, Timeout = ${timeout}/${TIMEOUT_MAX}, presence = ${presenceSensor.presence}, lights on? = ${endLightsOn}`);
 		}, 1000);
 	});
