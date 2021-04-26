@@ -2,18 +2,12 @@ require('dotenv').config();
 
 // HUE
 const v3 = require('node-hue-api').v3;
-const LightState = v3.lightStates.LightState;
-
-const USERNAME = process.env.HUE_BRIDGE_USER
-	// The name of the light we wish to retrieve by name
-	, LIGHT_ID = 1
-	;
+const USERNAME = process.env.HUE_BRIDGE_USER;
 
 // TRADFRI
 const Tradfri = require('ikea-tradfri');
-var Identity = { identity: process.env.TRADFRI_IDENTITY, psk: process.env.TRADFRI_PSK };
-
-tradfri = new Tradfri(process.env.TRADFRI_IP, Identity);
+var credentials = { identity: process.env.TRADFRI_IDENTITY, psk: process.env.TRADFRI_PSK };
+var tradfri = new Tradfri(process.env.TRADFRI_IP, credentials);
 
 // Detection
 Promise.all([tradfri.connect(), v3.discovery.nupnpSearch()])
