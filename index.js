@@ -27,10 +27,7 @@ Promise.all([tradfri.connect(), v3.discovery.nupnpSearch()])
 		var seconds = 0;
 
 		function AnyKitchenLightsOn(kitchenLights) {
-			return kitchenLights.reduce(
-				function (acc, cur) {
-					return acc || cur.isOn;
-				}, false);
+			return kitchenLights.some(x => x.isOn);
 		}
 
 		setInterval(async () => {
