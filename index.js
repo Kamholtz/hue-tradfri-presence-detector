@@ -21,7 +21,6 @@ Promise.all([tradfri.connect(), v3.discovery.nupnpSearch()])
 	.then(api => {
 		const PRECENCE_SENSOR_ID = 33;
 		const TIMEOUT_MAX = 60;
-		const KITCHEN_LIGHTS = tradfri.devices.filter(x => x.name.match(/K\d/));
 
 		var timeout = 0;
 		var seconds = 0;
@@ -34,6 +33,7 @@ Promise.all([tradfri.connect(), v3.discovery.nupnpSearch()])
 		setInterval(async () => {
 			// Sensing
 			const presenceSensor = await api.sensors.getSensor(PRECENCE_SENSOR_ID);
+			const KITCHEN_LIGHTS = tradfri.devices.filter(x => x.name.match(/K\d/));
 			var initialLightsOn = AnyKitchenLightsOn(KITCHEN_LIGHTS);
 
 			if (presenceSensor.presence) {
@@ -60,6 +60,6 @@ Promise.all([tradfri.connect(), v3.discovery.nupnpSearch()])
 
 			seconds++;
 			wasPresent = presenceSensor.presence;
-			console.log(`Total seconds = ${seconds}, Timeout = ${timeout}/${TIMEOUT_MAX}, presence = ${presenceSensor.presence}, lights initially on? = ${initialLightsOn}, lights now on? = ${endLightsOn}`);
+			console.log(`Total seconds = ${seconds}, Timeout = ${timeout}/${TIMEOUT_MAX}, presence = ${presenceSensor.presence}, lights initially on? = ${initialLightsOn}, lights now on? = ${endLightsOn}, kitchen lights = ${KITCHEN_LIGHTS.map(x => x.name).join(', ')}`);
 		}, 1000);
 	});
